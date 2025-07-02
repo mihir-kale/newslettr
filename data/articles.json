@@ -1,0 +1,21 @@
+[
+    {
+      "id": "1",
+      "title": "Why We Read Philosophy",
+      "url": "https://example.com/philosophy",
+      "source": "NYRB",
+      "excerpt": "A short reflection on why philosophical thought matters today.",
+      "date": "2025-06-29",
+      "tags": ["Philosophy", "Essays"]
+    },
+    {
+      "id": "2",
+      "title": "The Changing Landscape of Global Politics",
+      "url": "https://example.com/politics",
+      "source": "Foreign Affairs",
+      "excerpt": "Examining emerging trends in global governance.",
+      "date": "2025-06-27",
+      "tags": ["Politics"]
+    }
+  ]
+  
