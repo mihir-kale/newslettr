@@ -70,7 +70,7 @@ export default function Home() {
           newslettr
         </h1>
         <p className="text-center text-sm italic text-gray-700 mb-6">
-          procrastinate tastefull
+          curated procrastination
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-6">
