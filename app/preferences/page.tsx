@@ -24,7 +24,6 @@ export default function PreferencesPage() {
 
   useEffect(() => {
     if (status === "loading") return;
-
     if (!session) {
       setLoading(false);
       return;
@@ -99,18 +98,22 @@ export default function PreferencesPage() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center">Loading preferences...</div>;
+    return (
+      <div className="min-h-screen bg-[#fdf6e3] p-8 font-serif flex items-center justify-center">
+        Loading preferences...
+      </div>
+    );
   }
 
   if (!session) {
     return (
-      <div className="p-8 text-center">
-        <p className="mb-4 text-gray-700">
+      <div className="min-h-screen bg-[#fdf6e3] p-8 font-serif flex flex-col items-center justify-center">
+        <p className="mb-4 text-gray-700 italic text-lg">
           You need to sign in to manage your preferences.
         </p>
         <button
           onClick={() => signIn("google")}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="text-sm text-gray-600 underline hover:text-gray-900 transition"
         >
           Sign in with Google
         </button>
@@ -119,94 +122,97 @@ export default function PreferencesPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Preferences</h1>
+    <div className="min-h-screen bg-[#fdf6e3] p-8 font-serif">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="italic text-4xl font-bold mb-6 text-red-900 text-center">
+          Preferences
+        </h1>
 
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Select publications:</h2>
-        {["NYT", "Atlantic", "Aeon", "Wired", "WaPo", "Economist", "Vice"].map(
-          (pub) => (
-            <div key={pub}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={selectedPublications.includes(pub)}
-                  onChange={() => togglePublication(pub)}
-                  className="mr-2"
-                />
-                {pub}
-              </label>
-            </div>
-          )
-        )}
-      </div>
-
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Number of articles per day:</h2>
-        <select
-          value={dailyLimit}
-          onChange={(e) => setDailyLimit(Number(e.target.value))}
-          className="border px-2 py-1"
-        >
-          {[9, 12, 15].map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
+        <div className="mb-8">
+          <h2 className="text-lg uppercase tracking-widest text-gray-700 mb-2">
+            Select publications:
+          </h2>
+          {["NYT", "Atlantic", "Aeon", "Wired", "WaPo", "Economist", "Vice"].map((pub) => (
+            <label key={pub} className="block text-sm text-gray-800 mb-1">
+              <input
+                type="checkbox"
+                checked={selectedPublications.includes(pub)}
+                onChange={() => togglePublication(pub)}
+                className="mr-2"
+              />
+              {pub}
+            </label>
           ))}
-        </select>
-      </div>
+        </div>
 
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Add custom RSS feeds:</h2>
-        <div className="flex gap-2 mb-2">
-          <input
-            type="text"
-            value={newFeedUrl}
-            onChange={(e) => setNewFeedUrl(e.target.value)}
-            placeholder="https://example.com/feed"
-            className="border px-2 py-1 flex-grow"
-          />
-          <button
-            onClick={addCustomFeed}
-            className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700"
+        <div className="mb-8">
+          <h2 className="text-lg uppercase tracking-widest text-gray-700 mb-2">
+            Articles per day:
+          </h2>
+          <select
+            value={dailyLimit}
+            onChange={(e) => setDailyLimit(Number(e.target.value))}
+            className="border border-gray-400 bg-transparent px-2 py-1 text-sm"
           >
-            Add
+            {[9, 12, 15].map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-lg uppercase tracking-widest text-gray-700 mb-2">
+            Custom RSS feeds:
+          </h2>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={newFeedUrl}
+              onChange={(e) => setNewFeedUrl(e.target.value)}
+              placeholder="https://example.com/feed"
+              className="border border-gray-400 bg-transparent px-2 py-1 flex-grow text-sm"
+            />
+            <button
+              onClick={addCustomFeed}
+              className="text-sm text-gray-600 underline hover:text-gray-900 transition"
+            >
+              Add
+            </button>
+          </div>
+          <ul className="list-disc pl-6">
+            {customFeeds.map((feed) => (
+              <li key={feed.url} className="flex justify-between text-sm text-gray-800 mb-1">
+                <span>{feed.url}</span>
+                <button
+                  onClick={() => removeCustomFeed(feed.url)}
+                  className="text-red-700 hover:underline"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {error && <div className="text-red-700 mb-4 italic">{error}</div>}
+        {success && <div className="text-green-700 mb-4 italic">Feeds updated!</div>}
+
+        <div className="flex gap-6">
+          <button
+            onClick={savePreferences}
+            disabled={saving}
+            className="text-sm text-gray-600 underline hover:text-gray-900 transition disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save Preferences"}
+          </button>
+          <button
+            onClick={() => router.push("/")}
+            className="text-sm text-gray-600 underline hover:text-gray-900 transition"
+          >
+            Back to Home
           </button>
         </div>
-        <ul className="list-disc pl-6">
-          {customFeeds.map((feed) => (
-            <li key={feed.url} className="flex items-center justify-between">
-              <span>{feed.url}</span>
-              <button
-                onClick={() => removeCustomFeed(feed.url)}
-                className="text-red-600 hover:underline"
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
       </div>
-
-      {error && <div className="text-red-600">{error}</div>}
-      {success && <div className="text-green-600">Feeds updated!</div>}
-
-      <button
-        onClick={savePreferences}
-        disabled={saving}
-        className={`bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 ${
-          saving ? "opacity-50 cursor-not-allowed" : ""
-        }`}
-      >
-        {saving ? "Saving..." : "Save Preferences"}
-      </button>
-
-      <button
-        onClick={() => router.push("/")}
-        className="mt-6 inline-block bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-      >
-        Back to Home
-      </button>
     </div>
   );
 }
