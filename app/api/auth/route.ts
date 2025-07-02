@@ -4,7 +4,6 @@ import Parser from "rss-parser";
 export async function GET() {
   const parser = new Parser();
 
-  // Default feeds
   const feedSources = [
     { url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", paywalled: false },
     { url: "https://www.theatlantic.com/feed/all/", paywalled: true },
@@ -15,8 +14,6 @@ export async function GET() {
     { url: "https://www.vice.com/en/rss", paywalled: true }
   ];
 
-  // Example of your manually added feeds
-  // In a real project you’d fetch these from Supabase or session-tied DB.
   const customFeeds = [
     { url: "https://somecustomsite.com/feed", paywalled: false },
     { url: "https://anotherpaywalledsite.com/rss", paywalled: true }
@@ -24,18 +21,17 @@ export async function GET() {
 
   const combinedFeeds = [...feedSources, ...customFeeds];
 
-  // Parse all feeds in parallel
   const feedPromises = combinedFeeds.map(async feed => {
     try {
       const parsed = await parser.parseURL(feed.url);
       return parsed.items.map(item => ({
-        title: item.title,
+        title: item.title || "",
         link: feed.paywalled
-          ? `https://12ft.io/proxy?q=${encodeURIComponent(item.link)}`
-          : item.link,
-        snippet: item.contentSnippet,
-        pubDate: item.pubDate,
-        source: parsed.title
+          ? `https://12ft.io/proxy?q=${encodeURIComponent(item.link || "")}`
+          : item.link || "",
+        snippet: item.contentSnippet || "",
+        pubDate: item.pubDate || "",
+        source: parsed.title || ""
       }));
     } catch (err) {
       console.error(`Error parsing feed ${feed.url}:`, err);
@@ -43,7 +39,6 @@ export async function GET() {
     }
   });
 
-  // Wait for all
   const articlesArrays = await Promise.all(feedPromises);
   const articles = articlesArrays.flat();
 

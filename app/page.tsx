@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { supabase } from "@/lib/supabaseClient";
 import shuffle from "lodash.shuffle";
 
 type Article = {
@@ -19,56 +18,12 @@ export default function Home() {
 
   useEffect(() => {
     const loadArticles = async () => {
-      let userPreferences = null;
-
-      if (session?.user?.email) {
-        const { data } = await supabase
-          .from("preferences")
-          .select("*")
-          .eq("email", session.user.email)
-          .single();
-        userPreferences = data;
+      const res = await fetch("/api/articles");
+      if (res.ok) {
+        const data = await res.json();
+        setArticles(data);
       }
-
-      let all: Article[] = [];
-
-      if (userPreferences) {
-        const sources = userPreferences.publications?.map((p: string) => p.toLowerCase()) ?? [];
-        for (const pub of sources) {
-          const res = await fetch(`/api/articles?source=${pub}`);
-          if (res.ok) all.push(...(await res.json()));
-        }
-
-        const { data: feeds } = await supabase
-          .from("custom_feeds")
-          .select("*")
-          .eq("email", session.user.email);
-
-        for (const feed of feeds || []) {
-          const res = await fetch(`/api/fetchCustomFeed?url=${encodeURIComponent(feed.url)}`);
-          if (res.ok) {
-            let data = await res.json();
-            if (feed.paywalled) {
-              data = data.map((a: Article) => ({
-                ...a,
-                link: `https://12ft.io/proxy?q=${encodeURIComponent(a.link)}`,
-              }));
-            }
-            all.push(...data);
-          }
-        }
-
-        all = shuffle(all).slice(0, userPreferences.daily_limit || 9);
-      }
-
-      if (all.length === 0) {
-        const res = await fetch("/api/articles");
-        if (res.ok) all = await res.json();
-      }
-
-      setArticles(all);
     };
-
     loadArticles();
   }, [session]);
 
@@ -104,10 +59,7 @@ export default function Home() {
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => signIn("google")}
-                className="text-xs text-gray-500 hover:text-gray-800 underline transition"
-              >
+              <button onClick={() => signIn("google", { callbackUrl: "/" })}>
                 Sign in with Google
               </button>
             )}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "../auth/authOptions";
 import { supabaseAdmin } from "@/lib/supabaseAdminClient";
 import Parser from "rss-parser";
 
@@ -37,9 +37,8 @@ const feedMap: Record<string, { url: string; paywalled: boolean }> = {
   },
 };
 
-// simple cache: stores articles and an expiry timestamp
 let cachedArticles: any[] = [];
-let cacheExpiry: number = 0;
+let cacheExpiry = 0;
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -62,7 +61,6 @@ export async function GET(req: Request) {
   const publications = preferences.publications || [];
   const dailyLimit = preferences.daily_limit || 9;
 
-  // check cache
   const now = Date.now();
   if (now < cacheExpiry) {
     console.log("Returning cached articles");
@@ -72,34 +70,35 @@ export async function GET(req: Request) {
   console.log("Cache expired or empty, fetching new articles...");
 
   const fetchPromises = publications
-    .map(pub => {
+    .map((pub: string) => {
       const feedInfo = feedMap[pub.toLowerCase()];
       if (!feedInfo) return null;
 
       return parser.parseURL(feedInfo.url)
-        .then(feed => feed.items.slice(0, 10).map(item => ({
-          title: item.title,
-          link: feedInfo.paywalled 
-            ? `https://12ft.io/proxy?q=${encodeURIComponent(item.link || "")}`
-            : item.link,
-          snippet: item.contentSnippet,
-          pubDate: item.pubDate,
-          source: feed.title,
-        })))
+        .then(feed =>
+          feed.items.slice(0, 10).map(item => ({
+            title: item.title || "",
+            link: feedInfo.paywalled
+              ? `https://12ft.io/proxy?q=${encodeURIComponent(item.link || "")}`
+              : item.link || "",
+            snippet: item.contentSnippet || "",
+            pubDate: item.pubDate || "",
+            source: feed.title || "",
+          }))
+        )
         .catch(err => {
           console.error(`Error parsing ${pub}:`, err);
           return [];
         });
     })
-    .filter(Boolean);
+    .filter(Boolean) as Promise<any[]>[];
 
   const results = await Promise.all(fetchPromises);
   let allArticles = results.flat();
   allArticles = allArticles.sort(() => Math.random() - 0.5);
 
-  // update cache
   cachedArticles = allArticles;
-  cacheExpiry = now + 2 * 60 * 60 * 1000; // 2 hours in ms
+  cacheExpiry = now + 2 * 60 * 60 * 1000; // 2 hours
 
   return NextResponse.json(allArticles.slice(0, dailyLimit));
 }

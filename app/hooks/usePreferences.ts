@@ -22,13 +22,20 @@ export function usePreferences() {
       return;
     }
 
-    if (status === "authenticated" && session?.user?.email) {
+    if (status === "authenticated") {
+      // guard against undefined user.email
+      const email = session?.user?.email;
+      if (!email) {
+        console.error("Authenticated session but no user email found");
+        return;
+      }
+
       const loadPreferences = async () => {
         setLoading(true);
         try {
           const [prefsRes, feedsRes] = await Promise.all([
-            supabase.from("preferences").select("*").eq("email", session.user.email).single(),
-            supabase.from("custom_feeds").select("*").eq("email", session.user.email),
+            supabase.from("preferences").select("*").eq("email", email).single(),
+            supabase.from("custom_feeds").select("*").eq("email", email),
           ]);
 
           if (prefsRes.data) {
