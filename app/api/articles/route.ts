@@ -43,23 +43,24 @@ let cacheExpiry = 0;
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  let publications = ["NYT", "Atlantic", "Aeon"];
+  let dailyLimit = 9;
+
+  // If signed in, override with saved preferences
+  if (session?.user?.email) {
+    const { data: preferences, error } = await supabaseAdmin
+      .from("preferences")
+      .select("*")
+      .eq("email", session.user.email)
+      .single();
+
+    if (!error && preferences) {
+      publications = preferences.publications || publications;
+      dailyLimit = preferences.daily_limit || dailyLimit;
+    } else {
+      console.error("Load preferences error:", error);
+    }
   }
-
-  const { data: preferences, error } = await supabaseAdmin
-    .from("preferences")
-    .select("*")
-    .eq("email", session.user.email)
-    .single();
-
-  if (error || !preferences) {
-    console.error("Load preferences error:", error);
-    return NextResponse.json({ error: "Could not load preferences" }, { status: 400 });
-  }
-
-  const publications = preferences.publications || [];
-  const dailyLimit = preferences.daily_limit || 9;
 
   const now = Date.now();
   if (now < cacheExpiry) {
