@@ -59,7 +59,10 @@ export default function Home() {
                 </button>
               </>
             ) : (
-              <button onClick={() => signIn("google", { callbackUrl: "/" })}>
+              <button
+                onClick={() => signIn("google", { callbackUrl: "/" })}
+                className="text-xs text-gray-500 hover:text-gray-800 underline transition"
+              >
                 Sign in with Google
               </button>
             )}
@@ -78,7 +81,9 @@ export default function Home() {
             <div
               key={idx}
               className="group border-t border-gray-300 pt-4 cursor-pointer"
-              onClick={() => window.open(article.link, "_blank", "noopener noreferrer")}
+              onClick={() =>
+                window.open(article.link, "_blank", "noopener noreferrer")
+              }
             >
               <div className="text-base text-red-900 group-hover:underline transition">
                 {article.title}
@@ -91,6 +96,21 @@ export default function Home() {
               </p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-12 border-t border-gray-300 pt-6 text-center text-sm italic text-gray-700">
+          <p>
+            <span className="font-bold">newslettr</span> is your procrastination fix. Select your favorite publications, add custom RSS
+            feeds, and stick to a fixed mix of articles each day.
+          </p>
+          <p className="mt-2">
+            <a
+              href="/preferences"
+              className="underline hover:text-gray-900 transition"
+            >
+              customize your feed →
+            </a>
+          </p>
         </div>
       </div>
     </div>
