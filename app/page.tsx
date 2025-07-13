@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
-import shuffle from "lodash.shuffle";
 
 type Article = {
   title: string;
@@ -26,6 +25,11 @@ export default function Home() {
     };
     loadArticles();
   }, [session]);
+
+  const handleArticleClick = (link: string) => {
+    window.open(link, "_blank", "noopener noreferrer");
+    setArticles(prev => prev.filter(article => article.link !== link));
+  };
 
   return (
     <div className="min-h-screen bg-[#fdf6e3] p-8 font-serif">
@@ -81,9 +85,7 @@ export default function Home() {
             <div
               key={idx}
               className="group border-t border-gray-300 pt-4 cursor-pointer"
-              onClick={() =>
-                window.open(article.link, "_blank", "noopener noreferrer")
-              }
+              onClick={() => handleArticleClick(article.link)}
             >
               <div className="text-base text-red-900 group-hover:underline transition">
                 {article.title}
@@ -100,8 +102,9 @@ export default function Home() {
 
         <div className="mt-12 border-t border-gray-300 pt-6 text-center text-sm italic text-gray-700">
           <p>
-            <span className="font-bold">newslettr</span> is your procrastination fix. Select your favorite publications, add custom RSS
-            feeds, and stick to a fixed mix of articles each day.
+            <span className="font-bold">newslettr</span> is your procrastination fix.
+            Select your favorite publications, add custom RSS feeds, and stick
+            to a fixed mix of articles each day.
           </p>
           <p className="mt-2">
             <a
