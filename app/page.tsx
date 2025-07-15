@@ -16,8 +16,17 @@ export default function Home() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [clickedLinks, setClickedLinks] = useState<Set<string>>(new Set());
 
-  // Load articles and clicked links on mount/session change
+  const todayKey = `clicked-${new Date().toISOString().split("T")[0]}`;
+
   useEffect(() => {
+    const stored = localStorage.getItem(todayKey);
+    if (stored) {
+      setClickedLinks(new Set(JSON.parse(stored)));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!session) return;
     const loadArticles = async () => {
       const res = await fetch("/api/articles");
       if (res.ok) {
@@ -26,26 +35,18 @@ export default function Home() {
       }
     };
     loadArticles();
-
-    const stored = localStorage.getItem("clickedArticles");
-    if (stored) {
-      setClickedLinks(new Set(JSON.parse(stored)));
-    }
   }, [session]);
 
-  const handleArticleClick = (link: string, index: number) => {
+  const handleClick = (link: string) => {
     window.open(link, "_blank", "noopener noreferrer");
 
-    setClickedLinks((prev) => {
-      const updated = new Set(prev).add(link);
-      localStorage.setItem("clickedArticles", JSON.stringify(Array.from(updated)));
-      setArticles((prevArticles) => prevArticles.filter((_, i) => i !== index));
-      return updated;
-    });
+    const updated = new Set(clickedLinks);
+    updated.add(link);
+    setClickedLinks(updated);
+    localStorage.setItem(todayKey, JSON.stringify(Array.from(updated)));
   };
 
-  // Filter out clicked articles before rendering
-  const visibleArticles = articles.filter((article) => !clickedLinks.has(article.link));
+  const visibleArticles = articles.filter(article => !clickedLinks.has(article.link));
 
   return (
     <div className="min-h-screen bg-[#fdf6e3] p-8 font-serif">
@@ -101,7 +102,7 @@ export default function Home() {
             <div
               key={idx}
               className="group border-t border-gray-300 pt-4 cursor-pointer"
-              onClick={() => handleArticleClick(article.link, idx)}
+              onClick={() => handleClick(article.link)}
             >
               <div className="text-base text-red-900 group-hover:underline transition">
                 {article.title}

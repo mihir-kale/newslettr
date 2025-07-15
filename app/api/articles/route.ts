@@ -1,3 +1,4 @@
+// /app/api/articles/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/authOptions";
@@ -5,101 +6,81 @@ import { supabaseAdmin } from "@/lib/supabaseAdminClient";
 import Parser from "rss-parser";
 
 const parser = new Parser();
-
 const feedMap: Record<string, { url: string; paywalled: boolean }> = {
-  nyt: {
-    url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
-    paywalled: false,
-  },
-  atlantic: {
-    url: "https://www.theatlantic.com/feed/all/",
-    paywalled: true,
-  },
-  aeon: {
-    url: "https://aeon.co/feed.rss",
-    paywalled: false,
-  },
-  wired: {
-    url: "https://www.wired.com/feed/rss",
-    paywalled: false,
-  },
-  wapo: {
-    url: "https://feeds.washingtonpost.com/rss/world",
-    paywalled: false,
-  },
-  economist: {
-    url: "https://www.economist.com/latest/rss.xml",
-    paywalled: false,
-  },
-  vice: {
-    url: "https://www.vice.com/en/rss",
-    paywalled: true,
-  },
+  nyt: { url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", paywalled: false },
+  atlantic: { url: "https://www.theatlantic.com/feed/all/", paywalled: true },
+  aeon: { url: "https://aeon.co/feed.rss", paywalled: false },
+  wired: { url: "https://www.wired.com/feed/rss", paywalled: false },
+  wapo: { url: "https://feeds.washingtonpost.com/rss/world", paywalled: false },
+  economist: { url: "https://www.economist.com/latest/rss.xml", paywalled: false },
+  vice: { url: "https://www.vice.com/en/rss", paywalled: true },
 };
-
-let cachedArticles: any[] = [];
-let cacheExpiry = 0;
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
 
+  const email = session.user.email;
+  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+  // Check if today's articles are already cached
+  const { data: existing, error: fetchError } = await supabaseAdmin
+    .from("daily_articles")
+    .select("articles")
+    .eq("email", email)
+    .eq("date", today)
+    .single();
+
+  if (existing && !fetchError) {
+    return NextResponse.json(existing.articles);
+  }
+
+  // Load preferences
   let publications = ["NYT", "Atlantic", "Aeon"];
   let dailyLimit = 9;
 
-  // If signed in, override with saved preferences
-  if (session?.user?.email) {
-    const { data: preferences, error } = await supabaseAdmin
-      .from("preferences")
-      .select("*")
-      .eq("email", session.user.email)
-      .single();
+  const { data: preferences, error: prefError } = await supabaseAdmin
+    .from("preferences")
+    .select("*")
+    .eq("email", email)
+    .single();
 
-    if (!error && preferences) {
-      publications = preferences.publications || publications;
-      dailyLimit = preferences.daily_limit || dailyLimit;
-    } else {
-      console.error("Load preferences error:", error);
-    }
+  if (!prefError && preferences) {
+    publications = preferences.publications || publications;
+    dailyLimit = preferences.daily_limit || dailyLimit;
   }
 
-  const now = Date.now();
-  if (now < cacheExpiry) {
-    console.log("Returning cached articles");
-    return NextResponse.json(cachedArticles.slice(0, dailyLimit));
-  }
+  // Fetch fresh articles
+  const fetchPromises = publications.map(pub => {
+    const feedInfo = feedMap[pub.toLowerCase()];
+    if (!feedInfo) return Promise.resolve([]);
 
-  console.log("Cache expired or empty, fetching new articles...");
-
-  const fetchPromises = publications
-    .map((pub: string) => {
-      const feedInfo = feedMap[pub.toLowerCase()];
-      if (!feedInfo) return null;
-
-      return parser.parseURL(feedInfo.url)
-        .then(feed =>
-          feed.items.slice(0, 10).map(item => ({
-            title: item.title || "",
-            link: feedInfo.paywalled
-              ? `https://12ft.io/proxy?q=${encodeURIComponent(item.link || "")}`
-              : item.link || "",
-            snippet: item.contentSnippet || "",
-            pubDate: item.pubDate || "",
-            source: feed.title || "",
-          }))
-        )
-        .catch(err => {
-          console.error(`Error parsing ${pub}:`, err);
-          return [];
-        });
-    })
-    .filter(Boolean) as Promise<any[]>[];
+    return parser.parseURL(feedInfo.url).then(feed =>
+      feed.items.slice(0, 10).map(item => ({
+        title: item.title || "",
+        link: feedInfo.paywalled
+          ? `https://12ft.io/proxy?q=${encodeURIComponent(item.link || "")}`
+          : item.link || "",
+        snippet: item.contentSnippet || "",
+        pubDate: item.pubDate || "",
+        source: feed.title || "",
+      }))
+    ).catch(() => []);
+  });
 
   const results = await Promise.all(fetchPromises);
-  let allArticles = results.flat();
-  allArticles = allArticles.sort(() => Math.random() - 0.5);
+  const allArticles = results.flat().sort(() => Math.random() - 0.5).slice(0, dailyLimit);
 
-  cachedArticles = allArticles;
-  cacheExpiry = now + 2 * 60 * 60 * 1000; // 2 hours
+  // Store in Supabase
+  await supabaseAdmin
+    .from("daily_articles")
+    .upsert({
+      email,
+      date: today,
+      articles: allArticles,
+    });
 
-  return NextResponse.json(allArticles.slice(0, dailyLimit));
+  return NextResponse.json(allArticles);
 }
