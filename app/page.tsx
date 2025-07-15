@@ -26,10 +26,11 @@ export default function Home() {
     loadArticles();
   }, [session]);
 
-  const handleArticleClick = (link: string) => {
-    window.open(link, "_blank", "noopener noreferrer");
-    setArticles(prev => prev.filter(article => article.link !== link));
-  };
+  const handleArticleClick = (link: string, index: number) => {
+  window.open(link, "_blank", "noopener noreferrer");
+  setArticles(prev => prev.filter((_, i) => i !== index));
+};
+
 
   return (
     <div className="min-h-screen bg-[#fdf6e3] p-8 font-serif">
@@ -85,7 +86,7 @@ export default function Home() {
             <div
               key={idx}
               className="group border-t border-gray-300 pt-4 cursor-pointer"
-              onClick={() => handleArticleClick(article.link)}
+              onClick={() => handleArticleClick(article.link, idx)}
             >
               <div className="text-base text-red-900 group-hover:underline transition">
                 {article.title}
