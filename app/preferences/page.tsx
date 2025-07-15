@@ -132,7 +132,7 @@ export default function PreferencesPage() {
           <h2 className="text-lg uppercase tracking-widest text-gray-700 mb-2">
             Select publications:
           </h2>
-          {["NYT", "Atlantic", "Aeon", "Wired", "WaPo", "Economist", "Vice"].map((pub) => (
+          {["NYT", "Atlantic", "Aeon", "Wired", "WaPo", "Economist", "Vice", "Indian Express", "Hindustan Times", "Loksatta", "Divya Marathi"].map((pub) => (
             <label key={pub} className="block text-sm text-gray-800 mb-1">
               <input
                 type="checkbox"

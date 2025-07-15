@@ -5,7 +5,6 @@ import { authOptions } from "../auth/authOptions";
 import { supabaseAdmin } from "@/lib/supabaseAdminClient";
 import Parser from "rss-parser";
 
-const parser = new Parser();
 const feedMap: Record<string, { url: string; paywalled: boolean }> = {
   nyt: { url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", paywalled: false },
   atlantic: { url: "https://www.theatlantic.com/feed/all/", paywalled: true },
@@ -14,7 +13,14 @@ const feedMap: Record<string, { url: string; paywalled: boolean }> = {
   wapo: { url: "https://feeds.washingtonpost.com/rss/world", paywalled: false },
   economist: { url: "https://www.economist.com/latest/rss.xml", paywalled: false },
   vice: { url: "https://www.vice.com/en/rss", paywalled: true },
+
+  // ✅ Indian + Marathi publications
+  "indian express": { url: "https://indianexpress.com/section/india/feed/", paywalled: false },
+  "hindustan times": { url: "https://www.hindustantimes.com/rss/india/rssfeed.xml", paywalled: false },
+  loksatta: { url: "https://www.loksatta.com/rss/section/mumbai.xml", paywalled: false },
+  "divya marathi": { url: "https://divyamarathi.bhaskar.com/rss-feed.xml", paywalled: false },
 };
+
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
